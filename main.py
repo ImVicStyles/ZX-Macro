@@ -13,11 +13,11 @@ CONFIG_PATH = Path("config.json")
 class AppConfig:
     delay_ms: int = 0
     drag_edit_enabled: bool = True
-    prefire_enabled: bool = True
     pullout_shotgun_enabled: bool = True
     drag_edit_hotkey: str = "F6"
-    prefire_hotkey: str = "F7"
     pullout_shotgun_hotkey: str = "F8"
+    drag_edit_key: str = "E"
+    select_building_edit_key: str = "P"
 
 
 class ZXMacroApp(tk.Tk):
@@ -40,7 +40,9 @@ class ZXMacroApp(tk.Tk):
             data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             return AppConfig()
-        return AppConfig(**{**asdict(AppConfig()), **data})
+        defaults = asdict(AppConfig())
+        filtered = {key: value for key, value in data.items() if key in defaults}
+        return AppConfig(**{**defaults, **filtered})
 
     def _save_config(self) -> None:
         data = asdict(self.config_data)
@@ -93,12 +95,12 @@ class ZXMacroApp(tk.Tk):
         )
 
         self.drag_edit_enabled_var = tk.BooleanVar(value=True)
-        self.prefire_enabled_var = tk.BooleanVar(value=True)
         self.pullout_shotgun_enabled_var = tk.BooleanVar(value=True)
 
         self.drag_edit_hotkey_var = tk.StringVar()
-        self.prefire_hotkey_var = tk.StringVar()
         self.pullout_shotgun_hotkey_var = tk.StringVar()
+        self.drag_edit_key_var = tk.StringVar()
+        self.select_building_edit_key_var = tk.StringVar()
 
         self._add_mode_row(
             modes_frame,
@@ -111,19 +113,30 @@ class ZXMacroApp(tk.Tk):
         self._add_mode_row(
             modes_frame,
             row=2,
-            name="Prefire Macro",
-            enabled_var=self.prefire_enabled_var,
-            hotkey_var=self.prefire_hotkey_var,
-            action=lambda: self._run_mode(MacroMode.PREFIRE),
-        )
-        self._add_mode_row(
-            modes_frame,
-            row=3,
             name="Pullout Shotgun",
             enabled_var=self.pullout_shotgun_enabled_var,
             hotkey_var=self.pullout_shotgun_hotkey_var,
             action=lambda: self._run_mode(MacroMode.PULLOUT_SHOTGUN),
         )
+
+        drag_edit_frame = ttk.LabelFrame(container, text="Drag Edit")
+        drag_edit_frame.pack(fill="x", pady=(16, 0))
+
+        ttk.Label(drag_edit_frame, text="Tecla de edición (editar)").grid(
+            row=0, column=0, sticky="w", padx=8, pady=6
+        )
+        drag_edit_key_entry = ttk.Entry(
+            drag_edit_frame, textvariable=self.drag_edit_key_var, width=10
+        )
+        drag_edit_key_entry.grid(row=0, column=1, sticky="w", padx=8, pady=6)
+
+        ttk.Label(drag_edit_frame, text="Select Building Edit").grid(
+            row=0, column=2, sticky="w", padx=8, pady=6
+        )
+        select_edit_entry = ttk.Entry(
+            drag_edit_frame, textvariable=self.select_building_edit_key_var, width=10
+        )
+        select_edit_entry.grid(row=0, column=3, sticky="w", padx=8, pady=6)
 
         footer = ttk.Frame(container)
         footer.pack(fill="x", pady=(16, 0))
@@ -156,21 +169,23 @@ class ZXMacroApp(tk.Tk):
     def _sync_ui_from_config(self) -> None:
         self.delay_var.set(self.config_data.delay_ms)
         self.drag_edit_enabled_var.set(self.config_data.drag_edit_enabled)
-        self.prefire_enabled_var.set(self.config_data.prefire_enabled)
         self.pullout_shotgun_enabled_var.set(self.config_data.pullout_shotgun_enabled)
         self.drag_edit_hotkey_var.set(self.config_data.drag_edit_hotkey)
-        self.prefire_hotkey_var.set(self.config_data.prefire_hotkey)
         self.pullout_shotgun_hotkey_var.set(self.config_data.pullout_shotgun_hotkey)
+        self.drag_edit_key_var.set(self.config_data.drag_edit_key)
+        self.select_building_edit_key_var.set(self.config_data.select_building_edit_key)
 
     def _update_config_from_ui(self) -> None:
         self.config_data.delay_ms = int(self.delay_var.get())
         self.config_data.drag_edit_enabled = self.drag_edit_enabled_var.get()
-        self.config_data.prefire_enabled = self.prefire_enabled_var.get()
         self.config_data.pullout_shotgun_enabled = self.pullout_shotgun_enabled_var.get()
         self.config_data.drag_edit_hotkey = self.drag_edit_hotkey_var.get().strip()
-        self.config_data.prefire_hotkey = self.prefire_hotkey_var.get().strip()
         self.config_data.pullout_shotgun_hotkey = (
             self.pullout_shotgun_hotkey_var.get().strip()
+        )
+        self.config_data.drag_edit_key = self.drag_edit_key_var.get().strip()
+        self.config_data.select_building_edit_key = (
+            self.select_building_edit_key_var.get().strip()
         )
 
     def _save(self) -> None:
@@ -182,9 +197,12 @@ class ZXMacroApp(tk.Tk):
         self._update_config_from_ui()
         self.engine.set_delay(self.config_data.delay_ms)
         self.engine.set_mode_enabled(MacroMode.DRAG_EDIT, self.config_data.drag_edit_enabled)
-        self.engine.set_mode_enabled(MacroMode.PREFIRE, self.config_data.prefire_enabled)
         self.engine.set_mode_enabled(
             MacroMode.PULLOUT_SHOTGUN, self.config_data.pullout_shotgun_enabled
+        )
+        self.engine.set_drag_edit_keys(
+            edit_key=self.config_data.drag_edit_key,
+            select_building_edit_key=self.config_data.select_building_edit_key,
         )
         messagebox.showinfo("ZX Macro", "Configuración aplicada.")
 

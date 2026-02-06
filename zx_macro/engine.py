@@ -7,7 +7,6 @@ from time import sleep
 
 class MacroMode(str, Enum):
     DRAG_EDIT = "drag_edit"
-    PREFIRE = "prefire"
     PULLOUT_SHOTGUN = "pullout_shotgun"
 
 
@@ -25,26 +24,16 @@ class MacroStep:
 class MacroEngine:
     def __init__(self) -> None:
         self.delay_ms = 0
+        self.drag_edit_key = "E"
+        self.select_building_edit_key = "P"
         self.enabled_modes: dict[MacroMode, bool] = {
             MacroMode.DRAG_EDIT: True,
-            MacroMode.PREFIRE: True,
             MacroMode.PULLOUT_SHOTGUN: True,
         }
         self.sequences: dict[MacroMode, list[MacroStep]] = {
-            MacroMode.DRAG_EDIT: [
-                MacroStep("Seleccionar pared"),
-                MacroStep("Arrastrar edición"),
-                MacroStep("Confirmar edición"),
-            ],
-            MacroMode.PREFIRE: [
-                MacroStep("Preparar arma"),
-                MacroStep("Prefire"),
-                MacroStep("Reset inmediato"),
-            ],
             MacroMode.PULLOUT_SHOTGUN: [
-                MacroStep("Cambiar a shotgun"),
-                MacroStep("Mantener puntería"),
-                MacroStep("Disparo rápido"),
+                MacroStep("Soltar click (mouse up)"),
+                MacroStep("Pulsar tecla 2"),
             ],
         }
 
@@ -54,10 +43,25 @@ class MacroEngine:
     def set_mode_enabled(self, mode: MacroMode, enabled: bool) -> None:
         self.enabled_modes[mode] = enabled
 
+    def set_drag_edit_keys(self, edit_key: str, select_building_edit_key: str) -> None:
+        if edit_key:
+            self.drag_edit_key = edit_key
+        if select_building_edit_key:
+            self.select_building_edit_key = select_building_edit_key
+
     def execute_mode(self, mode: MacroMode) -> str:
         if not self.enabled_modes.get(mode, False):
             return f"El modo {mode.value} está desactivado."
-        steps = self.sequences.get(mode, [])
+        if mode == MacroMode.DRAG_EDIT:
+            steps = [
+                MacroStep(
+                    f"Pulsar {self.drag_edit_key} para editar y seleccionar"
+                    f" ({self.select_building_edit_key})"
+                ),
+                MacroStep(f"Soltar {self.drag_edit_key} para confirmar"),
+            ]
+        else:
+            steps = self.sequences.get(mode, [])
         results = []
         for step in steps:
             step.delay_ms = self.delay_ms
