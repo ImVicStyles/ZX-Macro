@@ -8,6 +8,11 @@ Macro con interfaz y modos configurables para Fortnite.
 python main.py
 ```
 
+## Requisitos
+
+- Python 3.10+ (incluye Tkinter en la instalación estándar).
+- No requiere plugins adicionales; usa únicamente librerías estándar.
+
 ## Modos incluidos
 
 - Drag Edit
